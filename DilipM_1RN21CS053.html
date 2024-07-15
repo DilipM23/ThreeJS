@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Polygon with Three.js</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #f0f0f0; /* Updated background color */
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+    }
+    #polygonCompleteButton {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      background-color: #4CAF50; /* Updated button background color */
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // Set up the scene, camera, and renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Add Complete button
+    const polygonCompleteButton = document.createElement('button');
+    polygonCompleteButton.id = 'polygonCompleteButton';
+    polygonCompleteButton.innerText = 'Complete Polygon'; // Updated button text
+    document.body.appendChild(polygonCompleteButton);
+
+    // Move the camera back so we can see the scene
+    camera.position.z = 5;
+
+    // Array to hold the vertices
+    const vertices = [];
+
+    // Geometry and material for the points
+    const pointGeometry = new THREE.CircleGeometry(0.05, 32);
+    const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red color for points
+
+    // Function to add a vertex
+    function addVertex(x, y) {
+      const point = new THREE.Mesh(pointGeometry, pointMaterial);
+      point.position.set(x, y, 0);
+      scene.add(point);
+      vertices.push(new THREE.Vector3(x, y, 0));
+    }
+
+    // Function to create the polygon
+    function createPolygon() {
+      const shape = new THREE.Shape(vertices);
+      const geometry = new THREE.ShapeGeometry(shape);
+      const material = new THREE.MeshBasicMaterial({ color: 0x4CAF50, side: THREE.DoubleSide }); // Green color for polygon
+      const polygon = new THREE.Mesh(geometry, material);
+      scene.add(polygon);
+
+      const edges = new THREE.EdgesGeometry(geometry);
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff }); // Blue color for edges
+      const lines = new THREE.LineSegments(edges, lineMaterial);
+      scene.add(lines);
+    }
+
+    // Event listener for mouse click
+    window.addEventListener('click', (event) => {
+      if (isComplete) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      // Convert screen coordinates to world coordinates
+      const vector = new THREE.Vector3(x, y, 0.5);
+      vector.unproject(camera);
+      const dir = vector.sub(camera.position).normalize();
+      const distance = -camera.position.z / dir.z;
+      const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+
+      addVertex(pos.x, pos.y);
+    });
+
+    // Event listener for Complete button
+    let isComplete = false;
+    polygonCompleteButton.addEventListener('click', () => {
+      isComplete = true;
+      polygonCompleteButton.style.display = 'none'; // Hide the button
+      createPolygon();
+    });
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
